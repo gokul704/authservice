@@ -1,6 +1,8 @@
 package com.college.authservice.util;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.crypto.SecretKey;
 
@@ -17,13 +19,17 @@ public class JWTUtil {
 
     private final SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
 
-    public String generateToken(String username) {
+    public String generateToken(String username,String role) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role); // Add role as a claim
+
         return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+        		 .setClaims(claims)
+                 .setSubject(username)
+                 .setIssuedAt(new Date())
+                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                 .signWith(Keys.hmacShaKeyFor(jwtSecret.getBytes()), SignatureAlgorithm.HS256)
+                 .compact();
     }
 
     public String extractUsername(String token) {
@@ -45,5 +51,13 @@ public class JWTUtil {
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+    public String extractRole(String token) {
+        return Jwts.parser()
+                .setSigningKey(Keys.hmacShaKeyFor(jwtSecret.getBytes()))
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("role", String.class);
     }
 }
